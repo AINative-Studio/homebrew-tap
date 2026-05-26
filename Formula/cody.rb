@@ -8,8 +8,16 @@ class Cody < Formula
   depends_on "node"
 
   def install
-    system "npm", "install", "--prefix", libexec, "--production", "--ignore-scripts", "."
-    bin.write_exec_script (libexec/"bin/cody")
+    # Copy extracted package into libexec so npm install runs from the real path,
+    # not a temp file: symlink that Homebrew deletes after extraction.
+    # Fixes broken install: libexec/bin/cody not found. Refs cody-cli#120
+    libexec.install Dir["*"]
+    cd libexec do
+      system "npm", "install", "--production", "--ignore-scripts"
+    end
+    (libexec/"bin").mkpath
+    (libexec/"bin"/"cody").make_symlink libexec/"node_modules/@ainative/cody-cli/bin/cody.cjs"
+    bin.write_exec_script (libexec/"bin"/"cody")
   end
 
   test do
